@@ -1,0 +1,68 @@
+import type { Match } from "@/types";
+
+export const initialMatches: Match[] = [
+  {
+    id: "1",
+    date: "2024-03-15",
+    opponent: "Berserker",
+    score: "11-4",
+    result: "W",
+    scorers: "Adlan (4), Farid (2), Aiman (2), Hafiz (2), Zaki (1)",
+  },
+  {
+    id: "2",
+    date: "2024-03-22",
+    opponent: "Warriors FC",
+    score: "8-8",
+    result: "D",
+    scorers: "Adlan (3), Farid (2), Aiman (2), Zaki (1)",
+  },
+  {
+    id: "3",
+    date: "2024-03-29",
+    opponent: "Thunder United",
+    score: "5-9",
+    result: "L",
+    scorers: "Adlan (2), Farid (2), Aiman (1)",
+  },
+  {
+    id: "4",
+    date: "2024-04-05",
+    opponent: "Storm FC",
+    score: "12-3",
+    result: "W",
+    scorers: "Adlan (5), Farid (3), Aiman (2), Hafiz (1), Zaki (1)",
+  },
+  {
+    id: "5",
+    date: "2024-04-12",
+    opponent: "Phoenix SC",
+    score: "6-7",
+    result: "L",
+    scorers: "Adlan (2), Farid (2), Aiman (1), Zaki (1)",
+  },
+  {
+    id: "6",
+    date: "2024-04-19",
+    opponent: "Dragons United",
+    score: "9-5",
+    result: "W",
+    scorers: "Adlan (3), Farid (3), Aiman (2), Zaki (1)",
+  },
+  {
+    id: "7",
+    date: "2024-04-26",
+    opponent: "Lightning FC",
+    score: "7-7",
+    result: "D",
+    scorers: "Adlan (2), Farid (2), Aiman (2), Hafiz (1)",
+  },
+  {
+    id: "8",
+    date: "2024-05-03",
+    opponent: "Titans SC",
+    score: "4-10",
+    result: "L",
+    scorers: "Adlan (2), Farid (1), Aiman (1)",
+  },
+];
