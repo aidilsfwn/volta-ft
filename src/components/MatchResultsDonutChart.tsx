@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components";
 import { initialMatches } from "@/constants";
-import type { ChartConfig } from "@/components";
+import type { ChartConfig } from "@/components/ui/chart";
 
 const chartConfig = {
   matches: {
@@ -39,7 +39,7 @@ const chartConfig = {
 export const MatchResultsDonutChart = () => {
   const availableYears = useMemo(() => {
     const years = initialMatches.map((match) =>
-      new Date(match.date).getFullYear()
+      new Date(match.match_date).getFullYear()
     );
     return ["all", ...Array.from(new Set(years)).sort((a, b) => b - a)];
   }, []);
@@ -50,7 +50,7 @@ export const MatchResultsDonutChart = () => {
     if (selectedYear === "all") return initialMatches;
 
     return initialMatches.filter(
-      (match) => new Date(match.date).getFullYear() === parseInt(selectedYear)
+      (match) => new Date(match.match_date).getFullYear() === parseInt(selectedYear)
     );
   }, [selectedYear]);
 
@@ -61,11 +61,11 @@ export const MatchResultsDonutChart = () => {
     }, {} as Record<string, number>);
 
     return [
-      { result: "wins", matches: results.W || 0, fill: "var(--color-wins)" },
-      { result: "draws", matches: results.D || 0, fill: "var(--color-draws)" },
+      { result: "wins", matches: results.Win || 0, fill: "var(--color-wins)" },
+      { result: "draws", matches: results.Draw || 0, fill: "var(--color-draws)" },
       {
         result: "losses",
-        matches: results.L || 0,
+        matches: results.Loss || 0,
         fill: "var(--color-losses)",
       },
     ];

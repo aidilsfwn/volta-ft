@@ -62,7 +62,7 @@ export const MatchFormDialog = ({
       if (match) {
         // Editing existing match
         const formattedGoalscorers: GoalscorerInput[] = match.match_goals.map((mg) => ({
-          player_id: mg.player_id,
+          player_id: mg.player_id || '',
           player_name: mg.player.name,
           goals_count: mg.goals_count,
         }));
