@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from "react";
-
+import { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   Input,
@@ -10,150 +11,226 @@ import {
   DialogHeader,
   DialogTitle,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components";
-import type { Match } from "@/types";
+} from '@/components';
+import { GoalscorerInputComponent } from './GoalscorerInput';
+import { matchFormSchema, type MatchFormValues } from '@/lib/validations';
+import { calculateResult } from '@/lib/calculations';
+import type { MatchWithGoals, GoalscorerInput } from '@/types';
+
+interface MatchFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  match?: MatchWithGoals;
+  onSave: (data: MatchFormValues) => void;
+  isLoading?: boolean;
+}
 
 export const MatchFormDialog = ({
   open,
   onOpenChange,
   match,
   onSave,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  match?: Match;
-  onSave: (match: Match) => void;
-}) => {
-  const [formData, setFormData] = useState<Match>(
-    match || {
-      id: "",
-      date: "",
-      opponent: "",
-      score: "",
-      result: "W",
-      scorers: "",
-    }
-  );
+  isLoading = false,
+}: MatchFormDialogProps) => {
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<MatchFormValues>({
+    resolver: zodResolver(matchFormSchema),
+    defaultValues: {
+      match_date: '',
+      opposition_team: '',
+      volta_score: 0,
+      opposition_score: 0,
+      goalscorers: [],
+    },
+  });
 
+  // Watch scores to auto-update goalscorers requirement
+  const voltaScore = watch('volta_score');
+  const oppositionScore = watch('opposition_score');
+  const goalscorers = watch('goalscorers');
+
+  // Reset form when dialog opens/closes or match changes
   useEffect(() => {
-    if (match) {
-      setFormData(match);
-    } else {
-      setFormData({
-        id: "",
-        date: "",
-        opponent: "",
-        score: "",
-        result: "W",
-        scorers: "",
-      });
-    }
-  }, [match, open]);
+    if (open) {
+      if (match) {
+        // Editing existing match
+        const formattedGoalscorers: GoalscorerInput[] = match.match_goals.map((mg) => ({
+          player_id: mg.player_id,
+          player_name: mg.player.name,
+          goals_count: mg.goals_count,
+        }));
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    onSave({
-      ...formData,
-      id: formData.id || Date.now().toString(),
-    });
-    onOpenChange(false);
+        reset({
+          match_date: match.match_date,
+          opposition_team: match.opposition_team,
+          volta_score: match.volta_score,
+          opposition_score: match.opposition_score,
+          goalscorers: formattedGoalscorers,
+        });
+      } else {
+        // Adding new match
+        const today = new Date().toISOString().split('T')[0];
+        reset({
+          match_date: today,
+          opposition_team: '',
+          volta_score: 0,
+          opposition_score: 0,
+          goalscorers: [],
+        });
+      }
+    }
+  }, [open, match, reset]);
+
+  // Auto-clear goalscorers if volta score becomes 0
+  useEffect(() => {
+    if (voltaScore === 0 && goalscorers.length > 0) {
+      setValue('goalscorers', []);
+    }
+  }, [voltaScore, goalscorers.length, setValue]);
+
+  const onSubmit = (data: MatchFormValues) => {
+    onSave(data);
+    // Don't close immediately - let parent handle it after mutation succeeds
   };
+
+  // Calculate result for display
+  const result = voltaScore !== undefined && oppositionScore !== undefined
+    ? calculateResult(voltaScore, oppositionScore)
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{match ? "Edit Match" : "Add New Match"}</DialogTitle>
+          <DialogTitle>{match ? 'Edit Match' : 'Add New Match'}</DialogTitle>
           <DialogDescription>
             {match
-              ? "Update match details below."
-              : "Enter match details below."}
+              ? 'Update match details below.'
+              : 'Enter match details below. Result will be calculated automatically.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
+            {/* Date */}
             <div className="grid gap-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="match_date">
+                Date <span className="text-red-500">*</span>
+              </Label>
               <Input
-                id="date"
+                id="match_date"
                 type="date"
-                value={formData.date}
-                onChange={(e) =>
-                  setFormData({ ...formData, date: e.target.value })
-                }
-                required
+                {...register('match_date')}
+                className={errors.match_date ? 'border-red-500' : ''}
               />
+              {errors.match_date && (
+                <p className="text-sm text-red-600">{errors.match_date.message}</p>
+              )}
             </div>
+
+            {/* Opposition Team */}
             <div className="grid gap-2">
-              <Label htmlFor="opponent">Opponent</Label>
+              <Label htmlFor="opposition_team">
+                Opposition Team <span className="text-red-500">*</span>
+              </Label>
               <Input
-                id="opponent"
-                value={formData.opponent}
-                onChange={(e) =>
-                  setFormData({ ...formData, opponent: e.target.value })
-                }
-                placeholder="e.g., Berserker"
-                required
+                id="opposition_team"
+                {...register('opposition_team')}
+                placeholder="e.g., Thunder FC"
+                className={errors.opposition_team ? 'border-red-500' : ''}
               />
+              {errors.opposition_team && (
+                <p className="text-sm text-red-600">{errors.opposition_team.message}</p>
+              )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="score">Score</Label>
-              <Input
-                id="score"
-                value={formData.score}
-                onChange={(e) =>
-                  setFormData({ ...formData, score: e.target.value })
-                }
-                placeholder="e.g., 11-4"
-                required
-              />
+
+            {/* Scores */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="volta_score">
+                  Volta FT Score <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="volta_score"
+                  type="number"
+                  min="0"
+                  {...register('volta_score', { valueAsNumber: true })}
+                  className={errors.volta_score ? 'border-red-500' : ''}
+                />
+                {errors.volta_score && (
+                  <p className="text-sm text-red-600">{errors.volta_score.message}</p>
+                )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="opposition_score">
+                  Opposition Score <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="opposition_score"
+                  type="number"
+                  min="0"
+                  {...register('opposition_score', { valueAsNumber: true })}
+                  className={errors.opposition_score ? 'border-red-500' : ''}
+                />
+                {errors.opposition_score && (
+                  <p className="text-sm text-red-600">{errors.opposition_score.message}</p>
+                )}
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="result">Result</Label>
-              <Select
-                value={formData.result}
-                onValueChange={(value: "W" | "D" | "L") =>
-                  setFormData({ ...formData, result: value })
-                }
-              >
-                <SelectTrigger id="result">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="W">Win (W)</SelectItem>
-                  <SelectItem value="D">Draw (D)</SelectItem>
-                  <SelectItem value="L">Loss (L)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="scorers">Scorers</Label>
-              <Input
-                id="scorers"
-                value={formData.scorers}
-                onChange={(e) =>
-                  setFormData({ ...formData, scorers: e.target.value })
-                }
-                placeholder="e.g., Adlan (4), Farid (2)"
-                required
-              />
-            </div>
+
+            {/* Result Preview */}
+            {result && (
+              <div className="p-3 bg-muted rounded-md">
+                <p className="text-sm font-medium">
+                  Result:{' '}
+                  <span
+                    className={
+                      result === 'Win'
+                        ? 'text-green-600'
+                        : result === 'Draw'
+                        ? 'text-yellow-600'
+                        : 'text-red-600'
+                    }
+                  >
+                    {result}
+                  </span>
+                </p>
+              </div>
+            )}
+
+            {/* Goalscorers */}
+            <Controller
+              name="goalscorers"
+              control={control}
+              render={({ field }) => (
+                <GoalscorerInputComponent
+                  goalscorers={field.value}
+                  onChange={field.onChange}
+                  requiredTotal={voltaScore || 0}
+                  error={errors.goalscorers?.message}
+                />
+              )}
+            />
           </div>
+
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit">
-              {match ? "Save Changes" : "Add Match"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Saving...' : match ? 'Save Changes' : 'Add Match'}
             </Button>
           </DialogFooter>
         </form>

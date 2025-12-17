@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -14,18 +14,14 @@ import type {
 } from "@tanstack/react-table";
 
 import {
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+} from "@/components/ui/table";
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -33,16 +29,17 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components";
-import type { Match } from "@/types";
+} from "@/components/ui/pagination";
 
-export const DataTable = ({
+interface DataTableProps<TData> {
+  columns: ColumnDef<TData>[];
+  data: TData[];
+}
+
+export function DataTable<TData>({
   columns,
   data,
-}: {
-  columns: ColumnDef<Match>[];
-  data: Match[];
-}) => {
+}: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -99,65 +96,8 @@ export const DataTable = ({
     return pages;
   };
 
-  const availableYears = useMemo(() => {
-    const years = data.map((match) => new Date(match.date).getFullYear());
-    return ["all", ...Array.from(new Set(years)).sort((a, b) => b - a)];
-  }, [data]);
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row items-center gap-4">
-        <Input
-          placeholder="Filter by opponent..."
-          value={
-            (table.getColumn("opponent")?.getFilterValue() as string) ?? ""
-          }
-          onChange={(event) =>
-            table.getColumn("opponent")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <Select
-          value={(table.getColumn("date")?.getFilterValue() as string) ?? "all"}
-          onValueChange={(value) =>
-            table
-              .getColumn("date")
-              ?.setFilterValue(value === "all" ? "" : value)
-          }
-        >
-          <SelectTrigger className="w-full md:w-[150px]">
-            <SelectValue placeholder="Filter year" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableYears.map((year) => (
-              <SelectItem key={year} value={year.toString()}>
-                {year === "all" ? "All Time" : year}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={
-            (table.getColumn("result")?.getFilterValue() as string) ?? "all"
-          }
-          onValueChange={(value) =>
-            table
-              .getColumn("result")
-              ?.setFilterValue(value === "all" ? "" : value)
-          }
-        >
-          <SelectTrigger className="w-full md:w-[150px]">
-            <SelectValue placeholder="Filter result" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Results</SelectItem>
-            <SelectItem value="W">Wins</SelectItem>
-            <SelectItem value="D">Draws</SelectItem>
-            <SelectItem value="L">Losses</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -252,4 +192,4 @@ export const DataTable = ({
       </Pagination>
     </div>
   );
-};
+}
